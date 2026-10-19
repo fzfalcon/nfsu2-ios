@@ -969,3 +969,23 @@ Self-review (not a separate reviewer), at the owner's request after items 1–2.
   default positions, so SHIFT − stays on the left; the settings names follow (`ios_touch_settings.m`).
   A layout customised before this keeps each button's saved position, now with the other label.
 - Verified: device build installed; the owner confirmed shifting in a race.
+
+## 2026-10-19 — Upstream sync (nfsu2-sw v0.5.11..v0.5.13)
+
+- Merged `upstream/main` (d3bbc30): Vulkan early Z (pixel shaders without the alpha-test discard,
+  `PipeKey.nat`), fewer pass barriers, async present (Switch only by default), uniform reuse, square
+  pixels at 1280x720 in the front end too, motion-blur edge fix in the Vulkan snap, NIS camera
+  sequences kept at the title's frame interval when uncapped, and the toolkit's `output.py` helpers.
+- Conflicts: `CLAUDE.md` kept the iOS version, upstream's notes copied into `docs/UPSTREAM_NOTES.md`.
+  `nv2a_vk.c`: `PipeKey` keeps both `nat` and the MoltenVK static vertex layouts (`vfmt`/`vstride`),
+  `pipe` setup keeps both, and the flip calls `present_drain()` before `nv2a_vk_host_gate()`.
+- Not taken: DevZer0D4Y `optimize-apple-touch` (0c3a7a2, 0dcb5eb) commits a prebuilt IPA under
+  `dist/`, which carries the lifted game code.
+- Verified: tests/apple_touch 7/7, tests/metal_bindings 1/1, xboxrecomp nv2a_metal_msl 1/1,
+  test_pause.py and test_xiso.py pass. Toolkit pytest (without tools/fusion, needs `pefile`): 595
+  pass, 11 fail, the same 11 on a clean copy of upstream main (test harnesses missing the
+  `recomp_leaf_ld_*` accessors). macOS build boots to the title screen and the trailer on MoltenVK
+  and on Metal (frame dumps, no errors); iPhone 13 Pro: Metal at 1.5x, menu and movies 59.9 fps.
+- **Open:** Metal's `nv2a_snap` (nv2a_metal_msl.c) still uses the constant shift upstream replaced
+  for Vulkan; whether the motion blur pulls black in at the right edge on Metal with square pixels
+  is not checked.
