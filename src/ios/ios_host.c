@@ -107,6 +107,7 @@ void ios_host_setup(void)
         nenv = (e && *e == '0') ? -1 : read_env_file(path);
     }
 
+    setenv("NFSU2_FPS_LIMIT", "0", 0);
     path_join(path, sizeof path, docs, "game");
     setenv("NFSU2_GAME_DIR", path, 0);
     setenv("XDG_DATA_HOME", support, 0);

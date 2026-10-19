@@ -66,7 +66,7 @@ extern void xbe_entry_point(void);
 extern int recomp_dispatch_init(void);
 extern void xbox_path_init(const char *game_dir, const char *save_dir);
 
-#define NFSU2_ENTRY_POINT 0x0021B1CEu
+#include "region_profile.h"
 
 
 #if defined(__SWITCH__)
@@ -246,6 +246,7 @@ void xbox_gil_enter(void);             /* kernel_bridge.c: the guest lock */
 void xbox_gil_leave(void);
 void xbox_gil_mark_main(void);
 void nfsu2_text_patch_init(void);    /* text_patch.c: Switch button names */
+void nfsu2_options_load(void);      /* recomp_manual.c: Options -> Video rows */
 
 #ifdef __SWITCH__
 #include <pthread.h>
@@ -367,11 +368,14 @@ static int game_main(void)
         const char *e = getenv("NFSU2_SIM_STEPS");
         float steps = e ? (float)atof(e) : 6.0f;
         if (steps >= 1.0f && steps <= 30.0f) {
+            /* The PAL cap address has not yet been verified. */
+#ifndef NFSU2_REGION_PAL
             float *cap = (float *)((uint8_t *)xbox_GetMemoryBase() + 0x3A4C64);
             if (*cap == 3.0f) {
                 *cap = steps;
                 printf("[BOOT] game time cap %.0f ms per frame\n", steps * 1000.0f / 60.0f);
             }
+#endif
         }
     }
 
@@ -434,6 +438,7 @@ static int game_main(void)
 
     xbox_kernel_init();
     nfsu2_text_patch_init();
+    nfsu2_options_load();
     xbox_path_init(game_dir, NFSU2_DEFAULT_SAVE_DIR);
     xbox_kernel_bridge_init();
 

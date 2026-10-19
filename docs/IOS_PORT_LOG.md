@@ -943,3 +943,49 @@ Self-review (not a separate reviewer), at the owner's request after items 1–2.
   `cd gen && find . -type f | LC_ALL=C sort | xargs sha256sum` (`shasum -a 256` on the Mac).
 - Docs: `docs/IOS_BUILD.md` "No Mac? Lift the code on Windows", with a pointer from step 3 and the
   README.
+
+## 2026-10-19 — Resolution Scale on Metal, iOS default 1.5x
+
+- Problem: the phone ran hot and races stayed near 30 fps. The iOS host forced `RECOMP_GL_SCALE=4`
+  (2560x1920 race surfaces, 16x the pixels), and Metal ignored Options -> Video -> Resolution Scale.
+  iPhone 13 Pro (A15) log at 4x: races 28-38 fps, GPU command buffers 38-60 ms a frame, CPU ~50% of a
+  core -- GPU-bound.
+- `nv2a_metal.m` now reads `nv2a_vk_scale_pct` (the in-game row, recomp_manual.c): it starts at the
+  option's scale and, like nv2a_vk.c, rescales at the next flip when the row changes
+  (`rescale_surfaces`: surfaces rebuilt at the new stored size with their pixels drawn over, depth
+  buffers dropped). Weak definition of the variable so a Metal-only build still links.
+- `ios_host.c` no longer sets `RECOMP_GL_SCALE`, so the game's default (1.5x) applies and the row
+  shows the real value. `RECOMP_GL_SCALE` in `nfsu2x_env.txt` still rules until the row is changed.
+- Verified on macOS (M1, Metal): boot at 1.5x (960x720 open world), live switch to 2.5x (1600x1200)
+  and to 1x (1280x480 front end) through the variable; pictures correct (depth, glow, neon), no
+  texture failures, 59 fps at 1x with 2.9 ms GPU. iPhone 13 Pro: `[MTL] rendering at 1.5x (Options ->
+  Video)`, main menu 56 fps, GPU 4.9-5.4 ms (was ~11 ms at 4x), thermal nominal.
+- Owner's race on the phone at 1.5x: frame rate good. Changing the row on the device not tried.
+
+## 2026-10-19 — Driving overlay: shift buttons swapped
+
+- The owner reported SHIFT + and SHIFT − doing the opposite of their labels in races: Xbox X shifts
+  up and Y shifts down. `ios_touch.m` now labels X "SHIFT +" and Y "SHIFT −" and swaps their
+  default positions, so SHIFT − stays on the left; the settings names follow (`ios_touch_settings.m`).
+  A layout customised before this keeps each button's saved position, now with the other label.
+- Verified: device build installed; the owner confirmed shifting in a race.
+
+## 2026-10-19 — Upstream sync (nfsu2-sw v0.5.11..v0.5.13)
+
+- Merged `upstream/main` (d3bbc30): Vulkan early Z (pixel shaders without the alpha-test discard,
+  `PipeKey.nat`), fewer pass barriers, async present (Switch only by default), uniform reuse, square
+  pixels at 1280x720 in the front end too, motion-blur edge fix in the Vulkan snap, NIS camera
+  sequences kept at the title's frame interval when uncapped, and the toolkit's `output.py` helpers.
+- Conflicts: `CLAUDE.md` kept the iOS version, upstream's notes copied into `docs/UPSTREAM_NOTES.md`.
+  `nv2a_vk.c`: `PipeKey` keeps both `nat` and the MoltenVK static vertex layouts (`vfmt`/`vstride`),
+  `pipe` setup keeps both, and the flip calls `present_drain()` before `nv2a_vk_host_gate()`.
+- Not taken: DevZer0D4Y `optimize-apple-touch` (0c3a7a2, 0dcb5eb) commits a prebuilt IPA under
+  `dist/`, which carries the lifted game code.
+- Verified: tests/apple_touch 7/7, tests/metal_bindings 1/1, xboxrecomp nv2a_metal_msl 1/1,
+  test_pause.py and test_xiso.py pass. Toolkit pytest (without tools/fusion, needs `pefile`): 595
+  pass, 11 fail, the same 11 on a clean copy of upstream main (test harnesses missing the
+  `recomp_leaf_ld_*` accessors). macOS build boots to the title screen and the trailer on MoltenVK
+  and on Metal (frame dumps, no errors); iPhone 13 Pro: Metal at 1.5x, menu and movies 59.9 fps.
+- **Open:** Metal's `nv2a_snap` (nv2a_metal_msl.c) still uses the constant shift upstream replaced
+  for Vulkan; whether the motion blur pulls black in at the right edge on Metal with square pixels
+  is not checked.
