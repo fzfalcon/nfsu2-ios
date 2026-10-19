@@ -1700,8 +1700,9 @@ void sub_0033518D(void)
  *
  * Resolution Scale (Vulkan build only): 1x, 1.5x (default), 2x, 2.5x,
  * handed to the renderer as nv2a_vk_scale_pct, applied at its next flip
- * (nv2a_vk.c rescale_surfaces). Without a saved value RECOMP_GL_SCALE
- * still decides, and the row shows the nearest step.
+ * (nv2a_vk.c rescale_surfaces; on Apple nv2a_metal.m reads it too).
+ * Without a saved value RECOMP_GL_SCALE still decides, and the row shows
+ * the nearest step.
  *
  * Picture rows (Vulkan build only; renderer: nv2a_vk.c): Anti-Aliasing =
  * FXAA in the present pass (nv2a_vk_fxaa); Anisotropic = Off/2x/4x/8x/16x

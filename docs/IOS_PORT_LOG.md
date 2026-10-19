@@ -943,3 +943,21 @@ Self-review (not a separate reviewer), at the owner's request after items 1–2.
   `cd gen && find . -type f | LC_ALL=C sort | xargs sha256sum` (`shasum -a 256` on the Mac).
 - Docs: `docs/IOS_BUILD.md` "No Mac? Lift the code on Windows", with a pointer from step 3 and the
   README.
+
+## 2026-10-19 — Resolution Scale on Metal, iOS default 1.5x
+
+- Problem: the phone ran hot and races stayed near 30 fps. The iOS host forced `RECOMP_GL_SCALE=4`
+  (2560x1920 race surfaces, 16x the pixels), and Metal ignored Options -> Video -> Resolution Scale.
+  iPhone 13 Pro (A15) log at 4x: races 28-38 fps, GPU command buffers 38-60 ms a frame, CPU ~50% of a
+  core -- GPU-bound.
+- `nv2a_metal.m` now reads `nv2a_vk_scale_pct` (the in-game row, recomp_manual.c): it starts at the
+  option's scale and, like nv2a_vk.c, rescales at the next flip when the row changes
+  (`rescale_surfaces`: surfaces rebuilt at the new stored size with their pixels drawn over, depth
+  buffers dropped). Weak definition of the variable so a Metal-only build still links.
+- `ios_host.c` no longer sets `RECOMP_GL_SCALE`, so the game's default (1.5x) applies and the row
+  shows the real value. `RECOMP_GL_SCALE` in `nfsu2x_env.txt` still rules until the row is changed.
+- Verified on macOS (M1, Metal): boot at 1.5x (960x720 open world), live switch to 2.5x (1600x1200)
+  and to 1x (1280x480 front end) through the variable; pictures correct (depth, glow, neon), no
+  texture failures, 59 fps at 1x with 2.9 ms GPU. iPhone 13 Pro: `[MTL] rendering at 1.5x (Options ->
+  Video)`, main menu 56 fps, GPU 4.9-5.4 ms (was ~11 ms at 4x), thermal nominal.
+- Owner's race on the phone at 1.5x: frame rate good. Changing the row on the device not tried.

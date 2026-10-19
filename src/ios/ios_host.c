@@ -108,7 +108,6 @@ void ios_host_setup(void)
     }
 
     setenv("NFSU2_FPS_LIMIT", "0", 0);
-    setenv("RECOMP_GL_SCALE", "4", 0);
     path_join(path, sizeof path, docs, "game");
     setenv("NFSU2_GAME_DIR", path, 0);
     setenv("XDG_DATA_HOME", support, 0);

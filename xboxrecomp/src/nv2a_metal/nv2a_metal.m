@@ -184,6 +184,22 @@ typedef struct {
 
 static double s_scale = 1.0;
 
+/* The title's Options -> Video -> Resolution Scale in percent, written by
+ * recomp_manual.c; 0 until it is set (RECOMP_GL_SCALE decides). nv2a_vk.c
+ * owns it when it is built too; this weak copy keeps a Metal-only build
+ * linking. Applied at the next flip (rescale_surfaces). */
+__attribute__((weak)) volatile int nv2a_vk_scale_pct;
+
+static void stored_size(uint32_t w, uint32_t h, uint32_t *pw, uint32_t *ph)
+{
+    double k = s_scale, m = (double)(w > h ? w : h);
+    if (m * k > (double)s_max_size)
+        k = (double)s_max_size / m;
+    *pw = (uint32_t)(w * k + 0.5); *ph = (uint32_t)(h * k + 0.5);
+    if (!*pw) *pw = 1;
+    if (!*ph) *ph = 1;
+}
+
 static uint32_t to_stored(uint32_t v, uint32_t p, uint32_t l)
 {
     return (uint32_t)(((uint64_t)v * p + l / 2) / l);
@@ -428,14 +444,7 @@ static MtSurf *surf_get(uint32_t va, uint32_t w, uint32_t h, uint32_t aa_sx, uin
     surf_reset(s);
     s->va = va; s->w = w; s->h = h; s->used = s_frame;
     s->aa_sx = aa_sx; s->aa_sy = aa_sy;
-    {
-        double k = s_scale, m = (double)(w > h ? w : h);
-        if (m * k > (double)s_max_size)
-            k = (double)s_max_size / m;
-        s->pw = (uint32_t)(w * k + 0.5); s->ph = (uint32_t)(h * k + 0.5);
-        if (!s->pw) s->pw = 1;
-        if (!s->ph) s->ph = 1;
-    }
+    stored_size(w, h, &s->pw, &s->ph);
     s->tex = make_texture(MTLTextureType2D, MTLPixelFormatBGRA8Unorm, s->pw, s->ph,
                           MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead);
     if (!s->tex) {
@@ -856,6 +865,47 @@ static void draw_copy(id<MTLTexture> src, uint32_t sw, uint32_t sh, id<MTLTextur
         [e drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
     }
     [e endEncoding];
+}
+
+/* A new render scale (nv2a_vk_scale_pct), at a flip, outside rendering:
+ * as nv2a_vk.c does, every surface is rebuilt at its new stored size with
+ * its pixels scaled over -- render targets the title keeps across frames
+ * (glow accumulators, reflection faces, the frame being presented) do not
+ * go black -- and the depth buffers are dropped; depth_get makes new ones
+ * on the next draw. Cube maps and the feedback copy are keyed by stored
+ * size and follow by themselves. */
+static void rescale_surfaces(double k)
+{
+    int i;
+
+    s_scale = k;
+    fprintf(stderr, "  [MTL] rendering at %gx\n", k);
+    end_pass();
+    end_blit();
+    for (i = 0; i < MTL_MAX_SURF; i++) {
+        MtSurf *s = &s_surf[i];
+        id<MTLTexture> tex;
+        uint32_t pw, ph;
+        if (!s->tex)
+            continue;
+        stored_size(s->w, s->h, &pw, &ph);
+        if (pw == s->pw && ph == s->ph)
+            continue;
+        tex = make_texture(MTLTextureType2D, MTLPixelFormatBGRA8Unorm, pw, ph,
+                           MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead);
+        if (!tex) {
+            LOGE("surface 0x%08X %ux%u: texture creation failed\n", s->va, pw, ph);
+            continue;
+        }
+        draw_copy(s->tex, s->pw, s->ph, tex, 0, 0, 0, 0, pw, ph);
+        s->tex = tex;                   /* the command buffer keeps the old one */
+        s->pw = pw; s->ph = ph;
+        s->gen++;                       /* cube maps built from it refill */
+    }
+    for (i = 0; i < MTL_MAX_DEPTH; i++) {
+        s_depth[i].tex = nil;
+        s_depth[i].va = s_depth[i].pw = s_depth[i].ph = s_depth[i].used = 0;
+    }
 }
 
 /* A cube map whose faces the title renders (race car reflections); the
@@ -1780,11 +1830,17 @@ static int ready(void)
     {
         const char *e = getenv("RECOMP_GL_SCALE");
         double k = e ? strtod(e, NULL) : 1.0;
+        int option = nv2a_vk_scale_pct >= 50;
+        /* The title's option, when it was loaded before we got here
+         * (nfsu2_options_load at boot): start at it rather than rebuilding
+         * every surface at the first flip. */
+        if (option)
+            k = nv2a_vk_scale_pct / 100.0;
         if (!(k > 0.0)) k = 1.0;
         s_scale = k < 0.5 ? 0.5 : k > 4.0 ? 4.0 : k;
         if (s_scale != 1.0)
-            fprintf(stderr, "  [MTL] rendering at %gx (RECOMP_GL_SCALE), surfaces up to %u\n",
-                    s_scale, s_max_size);
+            fprintf(stderr, "  [MTL] rendering at %gx (%s), surfaces up to %u\n",
+                    s_scale, option ? "Options -> Video" : "RECOMP_GL_SCALE", s_max_size);
     }
     fprintf(stderr, "  [MTL] %s\n", s_dev.name.UTF8String);
     if (!fixed_shaders())
@@ -2913,6 +2969,12 @@ static void mtl_flip_inner(void)
         }
     }
     end_pass();
+    {
+        int pct = nv2a_vk_scale_pct;
+        double k = pct < 50 ? 0.0 : pct > 400 ? 4.0 : pct / 100.0;
+        if (k > 0.0 && k != s_scale)
+            rescale_surfaces(k);
+    }
     if (s && s_drew_any && dump_every && ((s_frame % (uint32_t)dump_every) == 0
                                           || (s_inst_alt && s_frame % (uint32_t)dump_every == 1))) {
         char path[320];

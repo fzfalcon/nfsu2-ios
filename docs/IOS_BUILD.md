@@ -144,7 +144,7 @@ Either:
   | `NFSU2_SCREEN=fit` / `=fill` | preserve aspect ratio / fill the screen (iOS default: fill, with stretching on wider screens) |
   | `NFSU2_TOUCH_LAYOUT=drive` | start with the driving overlay rather than Menu |
   | `NFSU2_FULLSCREEN=0` | start windowed on macOS (F11 toggles fullscreen) |
-  | `RECOMP_GL_SCALE=4` | iOS default: 4× width/height, 16× pixels; lower values reduce GPU cost |
+  | `RECOMP_GL_SCALE=2` | render resolution multiple (0.5–4); only until Options → Video → Resolution Scale is changed in the game (1×/1.5×/2×/2.5×, default 1.5×, kept in `Library/Caches/nfsu2x_options.txt`). Lower is cooler and faster |
   | `RECOMP_FPS_LOG=1` | fps, GPU command-buffer execution time, CPU, heat and sound health every 10 s in `nfsu2x_log.txt` |
   | `RECOMP_AUDIO_VOLUME=50` | master volume 0–100 |
 
