@@ -31,21 +31,33 @@ macOS. The original README (Switch and Linux) is in
 
 - **Native Metal renderer** (iOS 17+ / macOS 14+), with Vulkan through MoltenVK as the fallback
   (and on iOS 16)
-- **Touch controls** on iPhone and iPad: stick, gas and brake pedals, face buttons, haptics
+- **Up to 60 fps** in races and free-roam: the game's own 30 fps cap is lifted (`NFSU2_FPS_CAP=30`
+  puts it back)
+- **Resolution Scale** in Options → Video (1x, 1.5x, 2x, 2.5x; 1.5x by default), applied on the
+  next frame. The other new Video rows (Car Reflections, Anti-Aliasing, Anisotropic, Square
+  Pixels) apply to the MoltenVK renderer
+- **Touch controls** on iPhone and iPad, in two layouts: **Menu** (D-pad, OK/Back, Start and the
+  other Xbox buttons) and **Drive** (steering arrows, gas and brake, handbrake, nitrous, shift
+  up/down, camera, look back, pause). An editor moves, resizes, hides and remaps every button
 - **Controllers**: DualSense, Xbox and other MFi controllers; the touch controls hide while one is
   connected
 - **Mac keyboard** as a controller when no pad is connected
-- **Game import in the app**: pick your extracted disc folder; the app checks it and copies it in
+- **Game import in the app**: pick your Xbox ISO or extracted disc folder; the app checks the
+  executable first, then extracts or copies the game in, keeping your saves
+- **NTSC-U and PAL (Europe)**: each build runs one of the two executables; see
+  [docs/REGIONS.md](docs/REGIONS.md)
+- **Your own music**: import MP3s and they play as a playlist over the game audio
 - **Smooth movies** decoded with FFmpeg (VP6, LGPL, shipped as separate frameworks)
 - **Background pause**: leaving the app pauses the game, its sound and all GPU work
 - **Widescreen 16:9**, using the game's own wide mode
-- Saves stay with the game, in the app's `Documents/game/UDATA`
+- Saves stay with the game, in the app's `Documents/game/UDATA`; the Options settings are kept in
+  `nfsu2x_options.txt`
 
 ## Status
 
 | Device | State |
 |---|---|
-| iPhone 13 Pro (A15, iOS 27) | Movies, menus (60 fps), Quick Race and Career free-roam (30 fps, the game's own cap) |
+| iPhone 13 Pro (A15, iOS 27) | Movies, menus (60 fps), Quick Race and Career free-roam (uncapped, at 1.5x) |
 | Mac (M1) | The same; keyboard or controller |
 | iOS Simulator | Boots to the menus |
 
@@ -60,8 +72,9 @@ The full development log, with measurements, is in [docs/IOS_PORT_LOG.md](docs/I
 
 ## Getting started
 
-You need an Apple-silicon Mac with Xcode, your own NFSU2 Xbox disc (NTSC-U) and, for the phone, an
-Apple ID signed in to Xcode. In short:
+You need an Apple-silicon Mac with Xcode, your own NFSU2 Xbox disc (NTSC-U, or PAL Europe for a
+PAL build; see [docs/REGIONS.md](docs/REGIONS.md)) and, for the phone, an Apple ID signed in to
+Xcode. In short:
 
 1. Install the tools (Homebrew, Python with capstone).
 2. Extract your disc and translate the game's code to C on your Mac (`tools/regen.sh`). This step
@@ -69,14 +82,22 @@ Apple ID signed in to Xcode. In short:
    [No Mac? Lift the code on Windows](docs/IOS_BUILD.md#no-mac-lift-the-code-on-windows).
 3. Build the libraries for iOS (`tools/build_ios_deps.sh`, `tools/build_ffmpeg_apple.sh`).
 4. Build and install the app from Xcode's command line.
-5. Copy your game folder to the phone and pick it in the app.
+5. Copy your Xbox ISO or game folder to the phone and pick it in the app.
 
 Every command is in **[docs/IOS_BUILD.md](docs/IOS_BUILD.md)**, including the Mac version.
 
 ## Controls
 
-**Touch** (no controller connected): left side of the screen is a floating stick; on the right are
-the pedals (gas, brake), A/B/X/Y, White/Black, Start and Back.
+**Touch** (no controller connected) has two layouts:
+
+- **Menu**: D-pad, OK, Back, X, Y, White, Black, Select and Start.
+- **Drive**: steering arrows, gas and brake, E-Brake, NOS, Shift + / Shift −, Camera, Look Back,
+  Select and pause.
+
+The **DRIVE CONTROLS / MENU CONTROLS** button at the top centre switches between them; the PAL
+build also switches on its own when a race starts or ends. **EDIT** opens the Mobile Controls
+screen: move, resize, hide or remap each button, set the layout's opacity, and reach My Music and
+the game folder.
 
 **Mac keyboard** (no controller connected):
 
@@ -94,13 +115,16 @@ The in-game controls screen shows what each Xbox button does.
 
 **Settings** go in `nfsu2x_env.txt` (on the phone: Files → NFSU2), one `KEY=VALUE` per line, for
 example `NFSU2_RENDERER=vulkan` (MoltenVK instead of Metal), `NFSU2_TOUCH=0` (no touch controls),
-`RECOMP_GL_SCALE=1.5` (sharper picture) or `RECOMP_FPS_LOG=1` (performance log). More in
-[docs/IOS_BUILD.md](docs/IOS_BUILD.md).
+`NFSU2_TOUCH_LAYOUT=drive` (start with the Drive layout), `NFSU2_FPS_CAP=30` (the game's 30 fps
+cap) or `RECOMP_FPS_LOG=1` (performance log). The picture scale is set in the game, under
+Options → Video → Resolution Scale. More in [docs/IOS_BUILD.md](docs/IOS_BUILD.md).
 
 ## Credits
 
 - **[antoxa2584x/nfsu2-sw](https://github.com/antoxa2584x/nfsu2-sw)** by Anton Artemov: the NFSU2
   recompilation for Switch and Linux that this fork builds on.
+- **[DevZer0D4Y/nfsu2-ios](https://github.com/DevZer0D4Y/nfsu2-ios)** by DevZer0D4Y: the touch
+  layouts and their editor, ISO import, PAL support, the MP3 player and Metal speedups.
 - **[xboxrecomp](https://github.com/sp00nznet/xboxrecomp)** by sp00nz and contributors (MIT): the
   static recompilation toolkit and runtime.
 - **[xemu](https://github.com/xemu-project/xemu)**: the Xbox audio processor code (LGPL-2.1).
