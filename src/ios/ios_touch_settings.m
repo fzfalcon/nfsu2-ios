@@ -24,7 +24,7 @@ static NSString *control_name(int control, BOOL driving)
         return action_name(control);
     }
     static NSString *const names[TOUCH_COUNT] = {
-        @"Handbrake", @"Nitrous", @"Shift down", @"Shift up", @"Camera", @"Look back",
+        @"Handbrake", @"Nitrous", @"Shift up", @"Shift down", @"Camera", @"Look back",
         @"Select", @"Pause", @"D-pad Up", @"D-pad Down", @"D-pad Left", @"D-pad Right",
         @"Brake", @"Accelerator", @"Left steering arrow", @"Right steering arrow"
     };

@@ -961,3 +961,11 @@ Self-review (not a separate reviewer), at the owner's request after items 1–2.
   texture failures, 59 fps at 1x with 2.9 ms GPU. iPhone 13 Pro: `[MTL] rendering at 1.5x (Options ->
   Video)`, main menu 56 fps, GPU 4.9-5.4 ms (was ~11 ms at 4x), thermal nominal.
 - Owner's race on the phone at 1.5x: frame rate good. Changing the row on the device not tried.
+
+## 2026-10-19 — Driving overlay: shift buttons swapped
+
+- The owner reported SHIFT + and SHIFT − doing the opposite of their labels in races: Xbox X shifts
+  up and Y shifts down. `ios_touch.m` now labels X "SHIFT +" and Y "SHIFT −" and swaps their
+  default positions, so SHIFT − stays on the left; the settings names follow (`ios_touch_settings.m`).
+  A layout customised before this keeps each button's saved position, now with the other label.
+- Verified: device build installed; the owner confirmed shifting in a race.

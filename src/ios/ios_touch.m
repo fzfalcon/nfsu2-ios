@@ -39,8 +39,9 @@ static const char *k_menu[TOUCH_COUNT] = {
     "OK", "BACK", "X", "Y", "WHITE", "BLACK", "SELECT", "START",
     "▲", "▼", "◀", "▶", "", "", "", ""
 };
+/* Xbox X shifts up and Y down: SHIFT + is X, kept on the right. */
 static const char *k_drive[TOUCH_COUNT] = {
-    "E-BRAKE", "NOS", "SHIFT −", "SHIFT +", "CAMERA", "LOOK BACK", "SELECT", "Ⅱ",
+    "E-BRAKE", "NOS", "SHIFT +", "SHIFT −", "CAMERA", "LOOK BACK", "SELECT", "Ⅱ",
     "", "", "", "", "BRAKE", "GAS", "❮", "❯"
 };
 enum { NCTL = TOUCH_COUNT };
@@ -240,8 +241,8 @@ static void vpad_detach(void)
         case TOUCH_WHITE: r = CGRectMake(R - 150, T, 98, small); break;
         case TOUCH_BLACK: r = CGRectMake(L, T + small + 8, 98, small); break;
         case TOUCH_BACK: r = CGRectMake(L, T, 72, small); break;
-        case TOUCH_X: r = CGRectMake(L, B - big - small - 16, 84, small); break;
-        case TOUCH_Y: r = CGRectMake(L + 92, B - big - small - 16, 84, small); break;
+        case TOUCH_Y: r = CGRectMake(L, B - big - small - 16, 84, small); break;
+        case TOUCH_X: r = CGRectMake(L + 92, B - big - small - 16, 84, small); break;
         }
     } else {
         CGFloat dx = L + 1.5 * d, dy = B - 1.5 * d;
