@@ -1,0 +1,35 @@
+
+name: NFSU2 iOS Preparation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Check source and tools
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git python3-venv cmake ninja-build
+
+      - name: Set up Python environment
+        run: |
+          python3 -m venv xboxrecomp/.venv
+          xboxrecomp/.venv/bin/pip install 'capstone<6'
+
+      - name: Verify project scripts
+        run: |
+          test -f tools/regen.sh
+          test -f xboxrecomp/tools/xiso.py || \
+            find xboxrecomp -maxdepth 4 -iname '*xiso*' -print
+          test -f CMakeLists.txt
+          echo "Repository preparation checks completed."
